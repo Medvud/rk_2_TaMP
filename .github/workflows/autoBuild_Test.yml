@@ -43,7 +43,7 @@ jobs:
         ./tests
         ctest --output-on-failure
   release:
-    needs: build-and-test:
+    needs: build-and-test
     runs-on: ubuntu-latest
     steps:
       - name: Collect artifacts
