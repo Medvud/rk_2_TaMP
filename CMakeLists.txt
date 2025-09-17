@@ -18,7 +18,7 @@ if(BUILD_TESTS)
 
   add_executable(tests tests/test1.cpp)
   target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
-  target_link_libraries(tests gtest gtest_main gmock)
+  target_link_libraries(tests gtest gtest_main gmock gmock_main)
   add_test(test tests)
 endif()
 
