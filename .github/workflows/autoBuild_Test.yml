@@ -1,0 +1,62 @@
+name: Test and Build
+
+on:
+  push:
+    tags:
+      - "v*"
+permissions:
+  contents: write
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential
+        
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -DCMAKE_CXX_FLAGS="--coverage" -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+      
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config Release --target tests
+
+    - name: Generate Linux packages
+      run: |
+        cmake --install build --prefix build/out
+        cmake -E chdir build cpack -G DEB
+    - name: Upload Linux results
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux
+        path: |
+          build/*.deb
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: |
+        ./tests
+        ctest --output-on-failure
+  release:
+    needs: build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Release ${{ github.ref_name }}"
+          files: release-assets/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
